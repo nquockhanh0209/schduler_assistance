@@ -1,0 +1,17 @@
+version: "3.9"
+
+services:
+  schduler-service:
+    image: restream-service
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - ./:/app
+    command: python3 main.py
+    environment:
+      - BOT_TOKEN=${BOT_TOKEN}
+
+    network_mode: "host"
+    tty: true
+    restart: always
