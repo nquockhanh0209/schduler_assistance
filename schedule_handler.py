@@ -26,6 +26,7 @@ class SchedulerHandler:
         self.chat_id_schedule = {}
         self.plan = {}
         self.callback_func = callback_func
+        self.start_all_schedules()
     
     def weekday_pairer(self, key: int):
         weekday = {
@@ -50,7 +51,7 @@ class SchedulerHandler:
         self.plan[chat_id] = pd.DataFrame(pd.read_excel(self.chat_id_schedule[chat_id]))
         
         thread = threading.Thread(
-            target=self.scheduler, args=[chat_id, self.callback_func,])
+            target=self.scheduler, args=[chat_id])
         thread.daemon = True
         thread.start()
 

@@ -3,3 +3,4 @@ pyTelegramBotAPI
 openpyxl
 schedule
 psutil
+telebot

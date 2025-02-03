@@ -15,7 +15,7 @@ class TelegramBot:
 
         self.config = Config()
         self.bot = TeleBot(self.config.BOT_TOKEN)
-        self.scheduler_handler = SchedulerHandler()
+        self.scheduler_handler = SchedulerHandler(self.send_message)
 
     def send_message(self, chat_id: int, message: str):
         logger.info("callback called")
@@ -51,7 +51,7 @@ class TelegramBot:
                 with open(file_path, 'wb') as new_file:
                     new_file.write(downloaded_file)
                 self.scheduler_handler.save_chat_id_schedule_to_csv(sender = sender, chat_id=chat_id, file_name=file_path)
-                self.scheduler_handler.create_user_schedule(chat_id=chat_id, callback=self.send_message)
+                self.scheduler_handler.create_user_schedule(chat_id=chat_id, file_name=file_path)
                 self.bot.reply_to(message, "File received and saved successfully.")
             else:
                 self.bot.reply_to(message, "Please send an xlsx file.")
