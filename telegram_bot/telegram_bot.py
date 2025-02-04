@@ -31,13 +31,25 @@ class TelegramBot:
             print(f"Received message from {chat_id}: {text}")
         # handle_all_messages()
     def add_commands(self):
+        @self.bot.message_handler(commands=['start'])
+        def send_welcome(message):
+            self.bot.reply_to(message, "Welcome to the bot! Use /help to see available commands.")
+
+        @self.bot.message_handler(commands=['menu'])
+        def send_menu(message):
+            menu = (
+            "/help - Show help message\n"
+            "/menu - Show this menu\n"
+            "/monthly_plan - Upload your monthly plan in xlsx format\n"
+            # Add more commands to the menu as needed
+            )
+            self.bot.send_message(message.chat.id, menu)
 
         @self.bot.message_handler(commands=['help'])
         def send_help(message):
             self.bot.reply_to(message, "Here is how you can use the bot...")
 
-
-        @self.bot.message_handler(content_types=['document'])
+        @self.bot.message_handler(content_types=['monthly_plan'])
         def handle_xlsx_file(message):
             sender = message.from_user.username
             chat_id = message.chat.id
