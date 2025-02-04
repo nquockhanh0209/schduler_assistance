@@ -75,13 +75,14 @@ class SchedulerHandler:
         columns = self.plan[chat_id].columns
         timeline = self.plan[chat_id][columns[0]]
         for i in range(len(timeline)):
-            task_reminder_first = f"Incomming 30 min: {self.get_task(i, chat_id)}"
-            task_reminder_at_time = f"Now: {self.get_task(i, chat_id)}"
+            
+            def do(index):
+                task_reminder_first = f"Incomming 30 min: {self.get_task(index, chat_id)}"
+                task_reminder_at_time = f"Now: {self.get_task(index, chat_id)}"
 
-            time_str: str = timeline[i]
-            start_time = time_str.split('-')[0]
-            start_time_dt = DatetimeUtilities.str_to_datetime(dt_str=start_time, iso= False, fmt='%H:%M')
-            def do():
+                time_str: str = timeline[index]
+                start_time = time_str.split('-')[0]
+                start_time_dt = DatetimeUtilities.str_to_datetime(dt_str=start_time, iso= False, fmt='%H:%M')
                 reminder_time_dt = start_time_dt - datetime.timedelta(minutes=30)
                 logger.info(f"Reminder set for: {reminder_time_dt.time().strftime('%H:%M')}")
                 logger.info(f"Start time set for: {reminder_time_dt.time().strftime('%H:%M')}")
@@ -90,7 +91,7 @@ class SchedulerHandler:
                 schedule.every().day.at(start_time_dt.time().strftime('%H:%M')).do(self.callback_func, chat_id, task_reminder_at_time)
 
                 schedule.run_pending()
-            th = threading.Thread(target=do)
+            th = threading.Thread(target=do, args=[i,])
             th.daemon = True
             th.start()
         while True:
