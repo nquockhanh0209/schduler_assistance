@@ -24,6 +24,10 @@ class Config(metaclass=ConfigMeta):
     def __init__(self):
         if "BOT_TOKEN" in os.environ:
             self.BOT_TOKEN = os.environ["BOT_TOKEN"]
+        if "MONGODB_HOST" in os.environ:
+            self.MONGODB_HOST = os.environ["MONGODB_HOST"]
+        if "DB_NAME" in os.environ:
+            self.DB_NAME = os.environ["DB_NAME"]
        
 
     

@@ -1,4 +1,5 @@
 from datetime import time
+import datetime
 import pandas as pd
 import schedule
 from commonkit.utilities.datetime_utilities import DatetimeUtilities
@@ -26,13 +27,18 @@ from telebot import TeleBot
 # # while True:
 # #     schedule.run_pending()
 # #     time.sleep(1)
-def start_all_schedules():
-    all_schdule_df = pd.DataFrame(pd.read_csv('/home/khanhv/code/scheduler/files/database/database.csv'))
-    for row in all_schdule_df.iterrows():
-        chat_id = row[1]['chat_id']
-        sender = row[1]['sender']
-        file_name = row[1]['file_name']
-        print(f'{chat_id} {sender} {file_name}')
+# def start_all_schedules():
+#     all_schdule_df = pd.DataFrame(pd.read_csv('/home/khanhv/code/scheduler/files/database/database.csv'))
+#     for row in all_schdule_df.iterrows():
+#         chat_id = row[1]['chat_id']
+#         sender = row[1]['sender']
+#         file_name = row[1]['file_name']
+#         print(f'{chat_id} {sender} {file_name}')
 
-start_all_schedules()
+# start_all_schedules()
+
+start_time_dt = DatetimeUtilities.str_to_datetime(dt_str="07:00", iso= False, fmt='%H:%M')
+print(start_time_dt.time().strftime('%H:%M'))
+reminder_time_dt = start_time_dt - datetime.timedelta(minutes=30)
+print(f"Reminder set for: {reminder_time_dt.time().strftime('%H:%M')}")
         
