@@ -93,6 +93,11 @@ class SchedulerHandler:
     def set_day(self, chat_id: int, day: str):
         if chat_id not in self.chat_id_daily_schedule:
             self.chat_id_daily_schedule[chat_id] = DailyPlan()
+        if day == 'today':
+            day == datetime.today().strftime("%Y-%m-%d")
+        else:
+            day_time_type = DatetimeUtilities.str_to_datetime(dt_str=day, iso=False, fmt='%Y-%m-%d')
+            day = DatetimeUtilities.datetime_to_str(dt=day_time_type, iso=False, fmt='%Y-%m-%d')
         self.chat_id_daily_schedule[chat_id].day = day 
         logger.info(self.chat_id_daily_schedule[chat_id])
     def daily_scheduler(self, chat_id: int, user_name: str):
@@ -106,10 +111,15 @@ class SchedulerHandler:
             else: 
                 logger.info(self.chat_id_daily_schedule[chat_id])
                 self.mongo_db.insert_one(collection_name=user_name, data = self.chat_id_daily_schedule[chat_id])
+                del self.chat_id_daily_schedule[chat_id]
                 return "Task scheduled successfully! 🎯"
         except:
             return "You have not set any daily task, goal or session"
     
+    def get_today_tasks(self, user_name: str):
+        today_str = DatetimeUtilities.now().strftime("%Y-%m-%d")
+        collection = self.mongo_db.db[user_name]
+        today_tasks = collection.find({"day": today_str})
     def scheduler(self, chat_id):
         columns = self.plan[chat_id].columns
         timeline = self.plan[chat_id][columns[0]]

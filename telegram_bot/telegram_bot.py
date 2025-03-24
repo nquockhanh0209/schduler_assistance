@@ -1,11 +1,10 @@
 import os
 from telebot import TeleBot
-from telebot.handler_backends import State, StatesGroup
-from telebot.storage import StateMemoryStorage
 from commonkit.logging.logging_config import LogConfig
 from config.config import Config
+from model.daily_plan import DailyPlan
 from schedule_handler import SchedulerHandler
-from telebot import custom_filters
+from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 # Logger
 log_config = LogConfig(__name__)
 logger = log_config.logger
@@ -52,7 +51,6 @@ class TelegramBot:
         def send_help(message):
             self.bot.reply_to(message, "Here is how you can use the bot...")
 
-        g_state = None
         @self.bot.message_handler(commands=['set_daily_task'])
         def handle_daily_task(message):
             chat_id = message.chat.id
@@ -62,13 +60,11 @@ class TelegramBot:
 
         
         def receive_task(message):
-            print(f"🔵 receive_task() called for {message.from_user.id}")
             task = message.text
             self.scheduler_handler.set_daily_task(chat_id=message.chat.id, task=task)
             msg = self.bot.send_message(message.chat.id, "Received task\nWhat is the task for your big goal?")
             self.bot.register_next_step_handler(msg, receive_goal)
 
-        # @self.bot.message_handler(state=DailyTaskState.goal)
         def receive_goal(message):
             goal = message.text
             self.scheduler_handler.set_goal(chat_id=message.chat.id, goal=goal)
@@ -76,19 +72,31 @@ class TelegramBot:
             self.bot.register_next_step_handler(msg, receive_session)
 
 
-        # @self.bot.message_handler(state=DailyTaskState.day_session)
         def receive_session(message):
             day_session = message.text
             self.scheduler_handler.set_daily_session(chat_id=message.chat.id, day_session=day_session)
             msg = self.bot.send_message(message.chat.id, "What day are you going to do this task?")
             self.bot.register_next_step_handler(msg, receive_day)
 
-        # @self.bot.message_handler(state=DailyTaskState.day)
         def receive_day(message):
             day = message.text
             self.scheduler_handler.set_day(chat_id=message.chat.id, day=day)
             msg = self.scheduler_handler.daily_scheduler(chat_id=message.chat.id, user_name=message.from_user.username)
             self.bot.send_message(message.chat.id, msg)
+
+        @self.bot.message_handler(commands=['list_daily_task'])
+        def handle_list_daily_task(message):
+            markup = InlineKeyboardMarkup()
+            tasks = self.scheduler_handler.get_today_tasks(user_name=message.from_user.username)
+            for task in tasks:
+                task_dto = DailyPlan.from_dict(task)
+                button = InlineKeyboardButton(
+                    f"{self.get_icon(is_done=task_dto.is_done)} {task_dto.task}", 
+                    callback_data=f"change_text|{self.get_icon(is_done= not task_dto.is_done)} {task_dto.task}"
+                )                
+                markup.add(button)
+            msg = self.bot.send_message(message.chat.id, "What task do you plan today?")
+            self.bot.register_next_step_handler(msg, receive_task)
 
         @self.bot.message_handler(content_types=['document'])
         def handle_xlsx_file(message):
@@ -109,7 +117,10 @@ class TelegramBot:
             else:
                 self.bot.reply_to(message, "Please send an xlsx file.")
         # Add more command handlers as needed
-  
+
+    def get_icon(self, is_done: bool):
+        return "✅" if is_done else "❌"
+
     def start_bot(self):
         print("Starting bot...")
         
