@@ -9,6 +9,7 @@ from commonkit.logging.logging_config import LogConfig
 from commonkit.utilities.datetime_utilities import DatetimeUtilities
 import csv
 
+from commonkit.utilities.uuid_utilities import UUIDUtilities
 from enums.day_session import DaySession
 from model.daily_plan import DailyPlan
 from mongo.pymongo_base import PyMongo
@@ -106,20 +107,39 @@ class SchedulerHandler:
             self.chat_id_daily_schedule[chat_id].user_name = user_name
             self.chat_id_daily_schedule[chat_id].chat_id = chat_id
 
-            if self.chat_id_daily_schedule[chat_id].get("task") is None and self.chat_id_daily_schedule[chat_id].get("goal") is None and self.chat_id_daily_schedule[chat_id].get("day_session") is None:
+            if self.chat_id_daily_schedule[chat_id].task is None and self.chat_id_daily_schedule[chat_id].goal is None and self.chat_id_daily_schedule[chat_id].day_session is None:
                 return "You have not set any daily task, goal or session"
             else: 
                 logger.info(self.chat_id_daily_schedule[chat_id])
-                self.mongo_db.insert_one(collection_name=user_name, data = self.chat_id_daily_schedule[chat_id])
+                self.chat_id_daily_schedule[chat_id].id = UUIDUtilities.generate_unique_string()
+                self.mongo_db.insert_one(collection_name=user_name, data = DailyPlan.to_dict(self.chat_id_daily_schedule[chat_id]))
                 del self.chat_id_daily_schedule[chat_id]
                 return "Task scheduled successfully! 🎯"
-        except:
+        except Exception as e:
+            logger.error(e, exc_info=True)
             return "You have not set any daily task, goal or session"
     
     def get_today_tasks(self, user_name: str):
         today_str = DatetimeUtilities.now().strftime("%Y-%m-%d")
         collection = self.mongo_db.db[user_name]
         today_tasks = collection.find({"day": today_str})
+        return today_tasks
+
+    def update_today_tasks(self, user_name: str, task: str, is_done: bool):
+        collection = self.mongo_db.db[user_name]
+        logger.info(f"Updating task: {task} to is_done: {is_done}")
+        result = collection.update_one(
+            {"task": task},  # Search by task name
+            {"$set": {"is_done": is_done}}  # Set the new is_done value
+        )
+        logger.info(result)
+        if result.matched_count > 0:
+            text = "Task updated successfully!"
+            logger.info(text)
+        else:
+            text = "Task not found!"
+            logger.info(text)
+        return text
     def scheduler(self, chat_id):
         columns = self.plan[chat_id].columns
         timeline = self.plan[chat_id][columns[0]]

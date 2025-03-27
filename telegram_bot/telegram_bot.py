@@ -88,15 +88,64 @@ class TelegramBot:
         def handle_list_daily_task(message):
             markup = InlineKeyboardMarkup()
             tasks = self.scheduler_handler.get_today_tasks(user_name=message.from_user.username)
-            for task in tasks:
-                task_dto = DailyPlan.from_dict(task)
-                button = InlineKeyboardButton(
-                    f"{self.get_icon(is_done=task_dto.is_done)} {task_dto.task}", 
-                    callback_data=f"change_text|{self.get_icon(is_done= not task_dto.is_done)} {task_dto.task}"
-                )                
-                markup.add(button)
-            msg = self.bot.send_message(message.chat.id, "What task do you plan today?")
-            self.bot.register_next_step_handler(msg, receive_task)
+            logger.info(tasks)
+            if tasks is not None:
+                for task_data in tasks:
+                    task_data.pop('_id', None) 
+                    logger.info(task_data)
+                    task_dto = DailyPlan.from_dict(task_data)
+                    button = InlineKeyboardButton(
+                        f"{self.get_icon(is_done=task_dto.is_done)} {task_dto.task}", 
+                        callback_data=f"toggle_task|{self.get_icon(is_done= not task_dto.is_done)} {task_dto.task}"
+                    )                
+                    
+                    markup.add(button)
+                self.bot.send_message(message.chat.id, "Here is your today's tasks.", reply_markup=markup)
+            else:
+                msg = self.bot.send_message(message.chat.id, "You do not have any task today 😌")
+
+        # @self.bot.callback_query_handler(func=lambda call: call.data.startswith("change_text"))
+        # def callback_query(call):
+        #     # Extract data
+        #     _, task = call.data.split("|")  # Splitting the callback_data
+
+        #     # Create a new markup with the updated button text
+        #     new_markup = InlineKeyboardMarkup()
+        #     updated_button = InlineKeyboardButton(task, callback_data=f"changed|{task}")
+        #     new_markup.add(updated_button)
+        #     clean_task = task[2:]
+
+        #     # Edit the button text dynamically
+        #     self.bot.edit_message_reply_markup(chat_id=call.message.chat.id, 
+        #                                 message_id=call.message.message_id, 
+        #                                 reply_markup=new_markup)
+        
+
+        @self.bot.callback_query_handler(func=lambda call: call.data.startswith("toggle_task"))
+        def callback_query(call):
+            _, task = call.data.split("|")
+            task_state = self.pair_icon(task.split()[0])
+            logger.info(task_state)
+            text = self.scheduler_handler.update_today_tasks(
+                user_name=call.message.chat.username, 
+                task=task[2:], 
+                is_done= task_state)
+
+            new_task = f"{self.get_icon(is_done=not task_state)} {task[2:]}"
+            new_markup = InlineKeyboardMarkup()
+            updated_button = InlineKeyboardButton(
+                f"{task}", 
+                callback_data=f"toggle_task|{new_task}"
+            )
+            new_markup.add(updated_button)
+
+            # Edit message to update the button
+            self.bot.edit_message_reply_markup(
+                chat_id=call.message.chat.id, 
+                message_id=call.message.message_id, 
+                reply_markup=new_markup
+            )
+            self.bot.send_message(call.message.chat.id, text)
 
         @self.bot.message_handler(content_types=['document'])
         def handle_xlsx_file(message):
@@ -121,6 +170,8 @@ class TelegramBot:
     def get_icon(self, is_done: bool):
         return "✅" if is_done else "❌"
 
+    def pair_icon(self, icon: str):
+        return True if icon == "✅" else False
     def start_bot(self):
         print("Starting bot...")
         
